@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.TextView;
 
 
@@ -27,8 +28,25 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
         // This method is called when this activity is put foreground.
+
+        helper = new CourseDBHelper(this);
+        SQLiteDatabase db = helper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT SUM(credit) cr, SUM(value*credit) gp FROM course;", null);
+        cursor.moveToFirst();
+        Double cr = cursor.getDouble(0);
+
+        Double gp = cursor.getDouble(1);
+
+        double gpa = gp/cr;
+
+        TextView tvGP = (TextView) findViewById(R.id.tvGP);
+        tvGP.setText(Double.toString(gp));
+        TextView tvCR = (TextView) findViewById(R.id.tvCR);
+        tvCR.setText(Double.toString(cr));
+        TextView tvGPA = (TextView) findViewById(R.id.tvGPA);
+        tvGPA.setText(Double.toString(gpa));
+
 
     }
 
@@ -49,6 +67,14 @@ public class MainActivity extends ActionBarActivity {
 
             case R.id.btReset:
 
+                SQLiteDatabase db  = helper.getWritableDatabase();
+                int n_rows = db.delete("course", "", null);
+                TextView tvGP = (TextView) findViewById(R.id.tvGP);
+                tvGP.setText("0.0");
+                TextView tvCR = (TextView) findViewById(R.id.tvCR);
+                tvCR.setText("0.0");
+                TextView tvGPA = (TextView) findViewById(R.id.tvGPA);
+                tvGPA.setText("0.0");
                 break;
         }
     }
@@ -61,6 +87,16 @@ public class MainActivity extends ActionBarActivity {
                 int credit = data.getIntExtra("credit", 0);
                 String grade = data.getStringExtra("grade");
 
+                helper = new CourseDBHelper(this.getApplicationContext());
+                SQLiteDatabase db = helper.getWritableDatabase();
+                ContentValues r = new ContentValues();
+                r.put("code", code);
+                r.put("credit", credit);
+                r.put("grade", grade);
+                r.put("value", gradeToValue(grade));
+
+
+                long new_id = db.insert("course", null, r);
             }
         }
 
